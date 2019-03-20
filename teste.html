@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="https://unpkg.com/vue@2.5.17/dist/vue.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/bootstrap@4.1.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.css">
+  <style>
+    .erro {
+      color: red;
+      box-sizing: border-box;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <b-container fluid>
+      <b-row>
+        <b-cols cols="8">
+          <b-form-input v-model="cep" 
+            v-on:keyup.enter="buscaCep"
+            type="text" placeholder="Informe seu CEP"></b-form-input>
+          <p v-if="erro" class="erro">Este Cep não foi encontrado.</p>
+          <b-button @click="buscaCep" variant="primary">Buscar</b-button>
+        </b-cols>
+      </b-row>
+      <div>
+          <b-table striped hover :items="items" :fields="fields"></b-table>
+        </div>
+    </b-container>
+  </div>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.min.js"></script>
+  <script>
+    new Vue({
+    el: '#app',
+    data: {
+      name: 'Victor Coutinho',
+      cep: '',
+      fields: ["cep", "logradouro", "bairro", "uf"],
+      erro: false,
+      items: []
+    },
+    methods: {
+      buscaCep() {
+        let url = `https://viacep.com.br/ws/${this.cep}/json/`;
+
+        axios.get(url)
+          .then((response) => {
+            if ( response.data.erro ) {
+              this.erro = true
+            } else {
+              this.items.push({
+                cep: response.data.cep, 
+                logradouro: response.data.logradouro,
+                complemento: response.data.complemento,
+                bairro: response.data.bairro,
+                localidade: response.data.localidade,
+                uf: response.data.uf
+              })
+            }
+            this.cep = ''
+          })
+        
+      }
+    }
+});
+  </script>
+</body>
+</html>
