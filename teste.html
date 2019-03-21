@@ -38,7 +38,7 @@
 
       </b-card>
       <div>
-          <b-table striped hover fixed :items="items" :fields="fields">
+          <b-table striped hover fixed :items="items" :fields="fields" :key="cep">
             <template slot="valido" slot-scope="row">
               <span v-html="row.value"></span>
             </template>
@@ -79,7 +79,6 @@
     created() {
       for (let i = 1; i <= 10; i++) {
         this.cep = this.inicio + (i == 10 ? i : "0" + i ) + "0";
-        console.log(this.cep)
         this.buscaCep();
       }
       this.erro = false;
@@ -88,7 +87,7 @@
     watch: {
       cep(valor) {
         if (!this.change){
-          if ( ( valor.indexOf('-') && valor.length == 9 ) || valor.length == 8 ) {
+          if ( ( valor.indexOf('-') && valor.length == 9 ) || ( valor.indexOf('-') && valor.length == 8 ) ) {
             this.buscaCep()
           }
         }
@@ -99,20 +98,23 @@
       buscaCep() {
         let url = `https://viacep.com.br/ws/${this.cep}/json/`;
         this.erro = false
+        this.items.map((item) => {
+          if (item.cep == this.cep) {
+            this.cep = ''
+            this.verificado = true
+          }
+        })
         axios.get(url)
           .then((response) => {
-            if (this.index) {
+            if (this.index != null) {
               this.items[this.index] = this.save(response.data)
             } else {
               this.items.push(this.save(response.data))
             }
-          })
-          .then(() => {
             this.cep = ''
             this.index = null
             this.change = false
           })
-
       },
       del(i) {
         this.items.splice(i, 1)
@@ -133,7 +135,6 @@
           localidade: item.localidade,
           uf: item.uf
         }
-
       }
     }
 });
