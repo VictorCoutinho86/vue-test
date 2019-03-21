@@ -6,28 +6,52 @@
   <script src="https://unpkg.com/vue@2.5.17/dist/vue.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/bootstrap@4.1.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.0.0-rc.11/dist/bootstrap-vue.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
+        integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr"
+        crossorigin="anonymous">
   <style>
     .erro {
       color: red;
       box-sizing: border-box;
       padding: 10px;
     }
+    .card {
+      margin: 20px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    .fa-check {
+      color: green;
+    }
+    .fa-times-circle {
+      color: red;
+    }
   </style>
 </head>
 <body>
   <div id="app">
-    <b-container fluid>
-      <b-row>
-        <b-cols cols="8">
-          <b-form-input v-model="cep" 
-            v-on:keyup.enter="buscaCep"
+    <b-container  >
+      <b-card class="text-center">
+          <b-form-input v-model="cep"
             type="text" placeholder="Informe seu CEP"></b-form-input>
-          <p v-if="erro" class="erro">Este Cep não foi encontrado.</p>
-          <b-button @click="buscaCep" variant="primary">Buscar</b-button>
-        </b-cols>
-      </b-row>
+          <p v-if="erro" class="erro">CEP não encontrado.</p>
+
+      </b-card>
       <div>
-          <b-table striped hover :items="items" :fields="fields"></b-table>
+          <b-table striped hover fixed :items="items" :fields="fields">
+            <template slot="valido" slot-scope="row">
+              <span v-html="row.value"></span>
+            </template>
+
+            <template slot="actions" slot-scope="row">
+              <b-button variant="warning" @click="edit(row.item, row.index)" class="mr-1">
+                <i class="fas fa-pencil-alt"></i>
+              </b-button>
+              <b-button variant="danger" @click="del(row.index)">
+                <i class="fas fa-trash"></i>
+              </b-button>
+            </template>
+          </b-table>
         </div>
     </b-container>
   </div>
@@ -37,34 +61,79 @@
     new Vue({
     el: '#app',
     data: {
-      name: 'Victor Coutinho',
       cep: '',
-      fields: ["cep", "logradouro", "bairro", "uf"],
+      fields: [
+        {key: "valido", label: "VÁLIDO"},
+        {key:"cep", label: "CEP"},
+        {key: "logradouro", label: "LOGRADOURO"},
+        {key: "bairro", label: "BAIRRO"},
+        {key: "uf", label: "UF"},
+        {key: "actions", label: "AÇÕES"}
+      ],
       erro: false,
-      items: []
+      change: false,
+      index: null,
+      items: [],
+      inicio: '04104'
+    },
+    created() {
+      for (let i = 1; i <= 10; i++) {
+        this.cep = this.inicio + (i == 10 ? i : "0" + i ) + "0";
+        console.log(this.cep)
+        this.buscaCep();
+      }
+      this.erro = false;
+      this.cep = '';
+    },
+    watch: {
+      cep(valor) {
+        if (!this.change){
+          if ( ( valor.indexOf('-') && valor.length == 9 ) || valor.length == 8 ) {
+            this.buscaCep()
+          }
+        }
+        this.change = false
+      }
     },
     methods: {
       buscaCep() {
         let url = `https://viacep.com.br/ws/${this.cep}/json/`;
-
+        this.erro = false
         axios.get(url)
           .then((response) => {
-            if ( response.data.erro ) {
-              this.erro = true
+            if (this.index) {
+              this.items[this.index] = this.save(response.data)
             } else {
-              this.items.push({
-                cep: response.data.cep, 
-                logradouro: response.data.logradouro,
-                complemento: response.data.complemento,
-                bairro: response.data.bairro,
-                localidade: response.data.localidade,
-                uf: response.data.uf
-              })
-              this.erro = false
+              this.items.push(this.save(response.data))
             }
-            this.cep = ''
           })
-        
+          .then(() => {
+            this.cep = ''
+            this.index = null
+            this.change = false
+          })
+
+      },
+      del(i) {
+        this.items.splice(i, 1)
+      },
+      edit(item, i) {
+        this.cep = item.cep;
+        this.change = true;
+        this.index = i;
+      },
+      save(item) {
+        if (item.erro) {this.erro = true}
+        return {
+          valido: item.erro ? '<i class="far fa-times-circle"></i>' : '<i class="fas fa-check"></i>',
+          cep: item.erro ? this.cep : item.cep,
+          logradouro: item.logradouro,
+          complemento: item.complemento,
+          bairro: item.bairro,
+          localidade: item.localidade,
+          uf: item.uf
+        }
+
       }
     }
 });
